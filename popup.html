@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+  	<meta charset="UTF-8">
+    <style type="text/css">
+    	button {
+			font-size: 18px;
+			font-weight: 400;
+			color: #000000;
+			padding: 15px 25px;
+			width: max-content;
+			outline: none;
+			cursor: pointer;
+			margin: 0px;
+			border: none;
+			border-radius: 6px;
+			background: #ffcc00;
+			transition: 0.15s all;
+		}
+		button:hover {
+			background: #d9ad00;
+		}
+		button:active {
+			transform: translateY(2px);
+		}
+
+    </style>
+  </head>
+  <body>
+
+	<div style="display:flex;align-items:center;gap:20px;">
+		<button id="saleCalcBtn">Активировать акции</button>
+		<button id="promoCalcBtn">Активировать промокоды</button>
+	</div>
+    
+    <script src="popup.js"></script>
+  </body>
+</html>
