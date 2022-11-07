@@ -1,4 +1,3 @@
-
 let changeColor = document.getElementById("saleCalcBtn");
 let promoActivate = document.getElementById("promoCalcBtn");
 
@@ -40,7 +39,7 @@ promoActivate.addEventListener("click", async (e) => {
 
 function promoCalc() {
 
-	let checkAll = document.querySelector('.___thead___FJGT0 input[type="checkbox"]');
+	let checkAll = document.querySelector('table thead input[type="checkbox"]');
 
 	const delay = (n) => {
 		return new Promise (res => {
@@ -70,12 +69,19 @@ function promoCalc() {
 
 	let counter = 0
 
-	let data = document.querySelector('table')
+	let data = document.querySelector('[data-e2e="table-preloader"]')
 
-	let observer = new MutationObserver(() => retry());
+	let observer = new MutationObserver((mutationsList) => {
+		for (let mutation of mutationsList) {
+            if (mutation.type === 'attributes') {
+				retry()
+				break
+			}
+        }
+	});
 
 	
-	observer.observe(data, {childList: true, subtree: true});
+	observer.observe(data, {childList: false, subtree: false, characterData: true, attributes: true});
 
 	function retry() {
 		counter++
@@ -95,7 +101,7 @@ function promoCalc() {
 			observer.disconnect()
 			alert('Автоматизация завершена')
 		} else if ( e.key == 'ArrowUp' ) {
-			observer.observe(data, {childList: true, subtree: true});
+			observer.observe(data, {childList: false, subtree: false, characterData: true, attributes: true});
 			alert('Автоматизация включена! Нажмите кнопку выделения всех товаров!')
 		}
 	})
@@ -106,7 +112,19 @@ function promoCalc() {
 function saleCalc() {
 
     // Получаем кнопку отметить всё
-    let checkAll = document.querySelector('.___thead___FJGT0 input[type="checkbox"]');
+    let checkAll = document.querySelector('table thead input[type="checkbox"]');
+
+
+	// Следим за нажатием по кнопке отметить всё
+	checkAll.addEventListener('change', function() {
+		// Получаем все строки таблицы
+		let tableRows = document.querySelectorAll('table tbody tr');
+		// Запускаем главную функцию перебора
+		fd(tableRows)
+	})
+
+
+	const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
 
 	const delay = (n) => {
 		return new Promise (res => {
@@ -114,74 +132,63 @@ function saleCalc() {
 		})
 	}
 
-	checkAll.addEventListener('change', function() {
-		let tableRows = document.querySelectorAll('table.___table___I4N5X tbody tr');
-		fd(tableRows);
-	})
+	function firstInputChange(inputF, price) {
+		nativeInputValueSetter.call(inputF, price);
+		let ev = new Event('input', { bubbles: true});
+		inputF.dispatchEvent(ev);
+		let focus = new FocusEvent('focus')
+		let blur = new FocusEvent('blur')
+		inputF.dispatchEvent(focus);
+		inputF.dispatchEvent(blur);
+	}
+	function zeroSetter(inputS) {
+		nativeInputValueSetter.call(inputS, '');
+		let ev = new Event('input', { bubbles: true});
+		inputS.dispatchEvent(ev);
+		let focus = new FocusEvent('focus')
+		let blur = new FocusEvent('blur')
+		inputS.dispatchEvent(focus);
+		inputS.dispatchEvent(blur);
+	}
         
 	const fd = async (tableRs) => {
 
-		for ( const e of tableRs) {
+		for ( const row of tableRs) {
 
-			e.style.backgroundColor = '#d4e3fa';
+			row.style.backgroundColor = '#d4e3fa';
 
-			let checkbox = e.querySelector('[type="checkbox"]'),
-				fields = e.querySelectorAll('span.___Tag___xFCxD.__use--kind___TqC3g.__use--kind_tableBody____vp1n'),
-				inputs = e.querySelectorAll('.___Input___oH1gz.__type___n5hUm.__type_number___h9Hom.__use--align___Ct2J1.__use--align_left___u50gM'),
-				
-				inputFirst = inputs[0],
-				inputSecond = inputs[1],
-
-				price = fields[1],
-				sale = fields[2];
-
-			const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-
+			let checkbox = row.querySelector('[type="checkbox"]'), //Получаем галочку
+				inputFirst = row.querySelectorAll('td')[6].querySelector('input'), //Получаем первое поле ввода в строке
+				inputSecond = row.querySelectorAll('td')[7].querySelector('input'), //Получаем второе поле ввода в строке
+				price = row.querySelectorAll('td')[5].querySelector('span.___Tag___xFCxD.__use--kind___TqC3g.__use--kind_tableBody____vp1n'), //Получаем основную цену
+				sale = row.querySelectorAll('td')[8].querySelector('span.___Tag___xFCxD.__use--kind___TqC3g.__use--kind_tableBody____vp1n'); //Получаем процент скидки
+			
 			let priceTxt = price.textContent;
 			priceTxt = priceTxt.replace(/\D/g,'');
-
 			let checkboxStatus = checkbox.checked
+			
+			firstInputChange(inputFirst, priceTxt);
+			await delay(200);
+			zeroSetter(inputSecond)
+			await delay(200);
+			
+			let saleTxt = sale.textContent;
+			saleTxt = saleTxt.replace(/\D/g,'');
 
-			function firstInputChange() {
-				nativeInputValueSetter.call(inputFirst, priceTxt);
-				var ev = new Event('input', { bubbles: true});
-				inputFirst.dispatchEvent(ev);
-				var focus = new FocusEvent('focus')
-				var blur = new FocusEvent('blur')
-				inputFirst.dispatchEvent(focus);
-				inputFirst.dispatchEvent(blur);
-			}
-			firstInputChange();
-
-			function zeroSetter() {
-				nativeInputValueSetter.call(inputSecond, '');
-				var ev = new Event('input', { bubbles: true});
-				inputSecond.dispatchEvent(ev);
-				var focus = new FocusEvent('focus')
-				var blur = new FocusEvent('blur')
-				inputSecond.dispatchEvent(focus);
-				inputSecond.dispatchEvent(blur);
-			}
-			function zeroChecker() {
-				let saleTxt = sale.textContent;
-				saleTxt = saleTxt.replace(/\D/g,'');
-
-				if (saleTxt == 0) {
-					e.style.backgroundColor = "#fad5d4"
-					if (checkboxStatus) {
-						checkbox.click()
-					}
-				} else {
-					e.style.backgroundColor = "#d4fae0"
+			if (saleTxt == 0) {
+				row.style.backgroundColor = "#fad5d4"
+				if (checkboxStatus) {
+					checkbox.click()
 				}
+			} else {
+				row.style.backgroundColor = "#d4fae0"
 			}
-			await delay(50);
-			zeroSetter()
-			await delay(50);
-			zeroChecker()
+			
 		}
 		let btn = document.querySelector('.__use--size___TJHkL.__use--size_s___vC9Zt .___Button___Ltx4B.__use--type___HP3kV.__use--type_page___a18Cq.__disabled___IQ_Hz');
+	
 		let nextPage = btn.nextElementSibling;
+	
 		let pageCon = nextPage.querySelector('span span')?.textContent
 
 		if (pageCon) {
@@ -190,22 +197,24 @@ function saleCalc() {
 			observer.disconnect()
 		}
 	}
-		
-		
-		
-	
-		
 
 	checkAll.click()
 
 	let counter = 0
 
-	let data = document.querySelector('table')
+	let data = document.querySelector('[data-e2e="table-preloader"]')
 
-	let observer = new MutationObserver(() => retry());
+	let observer = new MutationObserver((mutationsList) => {
+		for (let mutation of mutationsList) {
+            if (mutation.type === 'attributes') {
+				retry()
+				break
+			}
+        }
+	});
 
 	
-	observer.observe(data, {childList: true, subtree: true});
+	observer.observe(data, {childList: false, subtree: false, characterData: true, attributes: true});
 
 	function retry() {
 		counter++
@@ -224,7 +233,7 @@ function saleCalc() {
 			observer.disconnect()
 			alert('Автоматизация завершена')
 		} else if ( e.key == 'ArrowUp' ) {
-			observer.observe(data, {childList: true, subtree: true});
+			observer.observe(data, {childList: false, subtree: false, characterData: true, attributes: true});
 			alert('Автоматизация включена! Нажмите кнопку выделения всех товаров!')
 		}
 	})
