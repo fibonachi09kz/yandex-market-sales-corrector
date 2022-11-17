@@ -133,86 +133,65 @@ function saleCalc() {
 	
 	const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
 	const nativeCheckboxValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "checked").set;
+
 	const delay = (n) => {
 		return new Promise (res => {
 			let tm = setTimeout (() => res(tm), n);
 		})
 	}
-	const ev = new Event('input', { bubbles: true});
+	const nativeInput = new Event('input', { bubbles: true });
+	const nativeClick = new Event('click', { bubbles: true });
+	const nativeFocus = new FocusEvent('focus');
+	const nativeBlur = new FocusEvent('blur');
 
-	function nativeClick(elem) {
-		elem.dispatchEvent(new Event('click', { bubbles: true }));
-	}
-
-	function nativeDetect(event, elem) {
-		elem.dispatchEvent(ev);
-		let focus = new FocusEvent('focus')
-		let blur = new FocusEvent('blur')
-		elem.dispatchEvent(focus);
-		elem.dispatchEvent(blur);
-	}
 	function firstInputChange(inputF, price) {
 		nativeInputValueSetter.call(inputF, price);
-		nativeDetect(ev, inputF)
+		inputF.dispatchEvent(nativeInput);
+		inputF.dispatchEvent(nativeFocus);
+		inputF.dispatchEvent(nativeBlur);
 	}
 	function zeroSetter(inputS) {
 		nativeInputValueSetter.call(inputS, '');
-		nativeDetect(ev, inputS)
+		inputS.dispatchEvent(nativeInput);
+		inputS.dispatchEvent(nativeFocus);
+		inputS.dispatchEvent(nativeBlur);
 	}
-
-
 
 	function checkboxSetter(checkboxElem, status) {
 		nativeCheckboxValueSetter.call(checkboxElem, status);
-		checkboxElem.dispatchEvent(new Event('click', { bubbles: true }));
+		checkboxElem.dispatchEvent(nativeClick);
+	}
+
+	function nexter() {
+		let btn = document.querySelector('.__use--size___TJHkL.__use--size_s___vC9Zt .___Button___Ltx4B.__use--type___HP3kV.__use--type_page___a18Cq.__disabled___IQ_Hz').nextElementSibling;
+
+		let pageCon = btn.querySelector('span span')?.textContent
+
+		if (pageCon) {
+			btn.click()
+		} else {
+			observer.disconnect()
+		}
 	}
 
 
 	const tableRows = document.querySelectorAll('table tbody tr');
 	const checkAllBtn = document.querySelector('table thead [type="checkbox"]');
         
-	const fd = (tableRs) => {
+	const fd = async (tableRs) => {
 
-		for ( const row of tableRs) {
+		for ( const rowOne of tableRs) {
+
+			rowOne.style.backgroundColor = '#d4e3fa';
 
 			/////////////////////////////////////////////////////////////////////
-			let checkbox = row.querySelector('[type="checkbox"]'),
-			inputFirst = row.querySelectorAll('td')[6].querySelector('input'),
-			inputSecond = row.querySelectorAll('td')[7].querySelector('input'),
-			price = row.querySelectorAll('td')[5].querySelector('span.___Tag___xFCxD.__use--kind___TqC3g.__use--kind_tableBody____vp1n'),
-			sale = row.querySelectorAll('td')[8].querySelector('span.___Tag___xFCxD.__use--kind___TqC3g.__use--kind_tableBody____vp1n');
-			/////////////////////////////////////////////////////////////////////
-
-
-
-			// Запускаем обсервер для первого инпута
-			/////////////////////////////////////////////////////////////////////
-			let inputFirstObserver = new MutationObserver((mutationsList) => {
-				if (inputFirst.value <= price) {
-					zeroSetter(inputSecond)
-				}
-			});
-			inputFirstObserver.observe(inputFirst, {
-				attributes: true,
-				characterData: true
-			});
+			let checkbox = rowOne.querySelector('[type="checkbox"]'),
+			inputFirst = rowOne.querySelectorAll('td')[6].querySelector('input'),
+			price = rowOne.querySelectorAll('td')[5].querySelector('span.___Tag___xFCxD.__use--kind___TqC3g.__use--kind_tableBody____vp1n'),
+			sale = rowOne.querySelectorAll('td')[8].querySelector('span.___Tag___xFCxD.__use--kind___TqC3g.__use--kind_tableBody____vp1n');
 			/////////////////////////////////////////////////////////////////////
 
 
-
-			// Запускаем обсервер для второго инпута
-			/////////////////////////////////////////////////////////////////////
-			let inputSecondObserver = new MutationObserver((mutationsList) => {
-				
-			});
-			inputSecondObserver.observe(inputSecond, {
-				attributes: true
-			});
-			/////////////////////////////////////////////////////////////////////
-
-
-
-			/////////////////////////////////////////////////////////////////////
 			let priceTxt = price.textContent;
 			priceTxt = priceTxt.replace(/\D/g,'');
 			let saleTxt = sale.textContent;
@@ -223,39 +202,58 @@ function saleCalc() {
 			if (checkboxStatus === false && saleTxt != 0) {
 				checkboxSetter(checkbox, true)
 			}
-			firstInputChange(inputFirst, priceTxt)
-			/////////////////////////////////////////////////////////////////////
-			
-			
-		}
-		let btn = document.querySelector('.__use--size___TJHkL.__use--size_s___vC9Zt .___Button___Ltx4B.__use--type___HP3kV.__use--type_page___a18Cq.__disabled___IQ_Hz').nextElementSibling;
-	
-		let pageCon = btn.querySelector('span span')?.textContent
 
-		if (pageCon) {
-			nativeClick(btn)
-		} else {
-			observer.disconnect()
+
+
+			function inputter() {
+				firstInputChange(inputFirst, priceTxt)
+				if (inputFirst.value > price) inputter()
+			}
+			inputter()
+
+			await delay(10)
+			
 		}
+
+		for ( const rowTwo of tableRs) {
+
+			rowTwo.style.backgroundColor = '#dff4d9';
+
+			/////////////////////////////////////////////////////////////////////
+			let inputSecond = rowTwo.querySelectorAll('td')[7].querySelector('input');
+
+			zeroSetter(inputSecond)
+			
+			await delay(100)
+			
+		}
+
+		
+
+
 	}
 
 	checkAllBtn.addEventListener('click', function() {
-		fd(tableRows)
+		fd(tableRows).then(r => nexter())
 	})
+
+	let counter = 0
 
 	let data = document.querySelector('[data-e2e="table-preloader"]')
 
 	let observer = new MutationObserver((mutationsList) => {
 		for (let mutation of mutationsList) {
             if (mutation.type === 'attributes') {
-				fd(tableRows)
-				break
+				counter++
+				if (counter % 2 == 0) {
+					fd(tableRows).then(r => nexter())
+				}
 			}
         }
 	});
 	
 	observer.observe(data, {childList: false, subtree: false, characterData: true, attributes: true});
 
-	fd(tableRows)
+	fd(tableRows).then(r => nexter())
     
 }
