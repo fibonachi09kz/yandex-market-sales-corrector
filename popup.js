@@ -184,13 +184,10 @@ function saleCalc() {
 
 			rowOne.style.backgroundColor = '#d4e3fa';
 
-			/////////////////////////////////////////////////////////////////////
 			let checkbox = rowOne.querySelector('[type="checkbox"]'),
 			inputFirst = rowOne.querySelectorAll('td')[6].querySelector('input'),
 			price = rowOne.querySelectorAll('td')[5].querySelector('span.___Tag___xFCxD.__use--kind___TqC3g.__use--kind_tableBody____vp1n'),
 			sale = rowOne.querySelectorAll('td')[8].querySelector('span.___Tag___xFCxD.__use--kind___TqC3g.__use--kind_tableBody____vp1n');
-			/////////////////////////////////////////////////////////////////////
-
 
 			let priceTxt = price.textContent;
 			priceTxt = priceTxt.replace(/\D/g,'');
@@ -202,8 +199,6 @@ function saleCalc() {
 			if (checkboxStatus === false && saleTxt != 0) {
 				checkboxSetter(checkbox, true)
 			}
-
-
 
 			function inputter() {
 				firstInputChange(inputFirst, priceTxt)
@@ -219,7 +214,6 @@ function saleCalc() {
 
 			rowTwo.style.backgroundColor = '#dff4d9';
 
-			/////////////////////////////////////////////////////////////////////
 			let inputSecond = rowTwo.querySelectorAll('td')[7].querySelector('input');
 
 			zeroSetter(inputSecond)
@@ -227,9 +221,6 @@ function saleCalc() {
 			await delay(100)
 			
 		}
-
-		
-
 
 	}
 
