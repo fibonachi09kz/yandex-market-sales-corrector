@@ -7,7 +7,7 @@ changeColor.addEventListener("click", async (e) => {
 
 	chrome.scripting.executeScript({
 		target: { tabId: tab.id },
-		function: saleCalc
+		function: promoAI
 	});
 
 	e.target.textContent = "Готово!";
@@ -37,8 +37,195 @@ promoActivate.addEventListener("click", async (e) => {
 
 
 
-function promoCalc() {
 
+
+
+function promoAI() {
+	let table = document.querySelector('table');
+	let checkbox = table.querySelector('thead input[type="checkbox"]');
+	const isNumeric = n => !!Number(n);
+	let baseSaleValue = document.querySelector('[data-e2e-i18n-key="pages.fulfillment-promos:promo.feature.discount-categories"]').textContent
+	baseSaleValue = baseSaleValue.split('').filter((e) => isNumeric(e));
+	baseSaleValue = `${baseSaleValue[0]}${baseSaleValue[1]}`
+
+	class dynamicTimer {
+		constructor(func, delay) {
+			this.callback = func
+			this.triggerTime = delay
+			this.timer = 0
+			this.updateTimer()
+		}
+		updateTimer() {
+			clearTimeout(this.timer)
+			let delay = this.triggerTime
+			console.log('таймер обновлён')
+			this.timer = setTimeout(this.callback, delay)
+			return this
+		}
+		addTime(delay) {
+			this.triggerTime = delay
+			this.updateTimer()
+			return this
+		}
+		clear() {
+			clearTimeout(this.timer)
+		}
+	}
+	
+	let observer = new MutationObserver((mutationsList) => {
+		
+		for (let mutation of mutationsList) {
+			if (mutation.type === 'childList' && mutation.target.classList.contains('___root_k72io_1')) {
+				saleAlertCorrect(mutation.target)
+			}
+			if (mutation.type === 'characterData' && mutation.target.parentElement.classList.contains('___Tag___xFCxD')) {
+				incorrectedSaleDeclick(mutation.target)
+			}
+        }
+
+		timer.updateTimer()
+		
+	});
+
+	
+	observer.observe(table, {childList: true, subtree: true, characterData: true, attributes: true});
+
+	checkbox.click();
+	let timer = new dynamicTimer(nextPage, 3000)
+
+	function saleAlertCorrect(node) {
+		let btn = node.querySelector('button.___Clickable___fcJVD');
+		if (btn) btn.click()
+	}
+
+	function incorrectedSaleDeclick(node) {
+		if (parseInt(node.data) != Number(baseSaleValue)) {
+			let check = node.parentElement.closest('tr').querySelector('input[type="checkbox"]');
+			if (check.checked) {
+				check.click()
+			}
+		}
+	}
+ 
+
+	
+	function nextPage() {
+		let btn = document.querySelector('.__use--size___TJHkL.__use--size_s___vC9Zt .___Button___Ltx4B.__use--type___HP3kV.__use--type_page___a18Cq.__disabled___IQ_Hz');
+		let nextPage = btn.nextElementSibling;
+		let pageCon = nextPage.querySelector('span span')?.textContent
+	
+		if (pageCon) {
+			nextPage.click()
+			console.log('работы заверешены')
+		} else {
+			observer.disconnect()
+			tableChanger.disconnect()
+		}
+	}
+
+	let counter = 0
+
+	let tableChangerIndicator = document.querySelector('[data-e2e="table-preloader"]')
+
+	let tableChanger = new MutationObserver((mutationsList) => {
+		for (let mutation of mutationsList) {
+            if (mutation.type === 'attributes') {
+				retry()
+			}
+        }
+	});
+
+	
+	tableChanger.observe(tableChangerIndicator, {childList: false, subtree: false, characterData: true, attributes: true});
+
+	function retry() {
+		counter++
+		if (counter % 2 === 0) {
+			auto()
+		}
+	}
+	
+	
+	function auto() {
+		checkbox.click()
+		timer = new dynamicTimer(nextPage, 3000)
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+	document.addEventListener('keydown', (e) => {
+		if ( e.key === 'ArrowDown' ) {
+			observer.disconnect()
+			tableChanger.disconnect()
+			alert('Автоматизация завершена')
+		}
+	})
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function promoCalc() {
+	
 	let checkAll = document.querySelector('table thead input[type="checkbox"]');
 
 	const delay = (n) => {
@@ -47,6 +234,72 @@ function promoCalc() {
 		})
 	}
 
+	let errorObserver;
+	let errorTimeout;
+	const errorCleanup = () => {
+		clearTimeout(errorTimeout);
+		errorObserver.disconnect();
+	};
+	function checkErrors() {
+		const tableRows = document.querySelectorAll('table tbody tr');
+		tableRows.forEach((row) => {
+			let check = row.querySelector('input[type="checkbox"]');
+			let error = row.querySelector('td:nth-child(8) .___unit_k72io_1 div');
+			if (error) {
+				check.click()
+			}
+		})
+		errorCleanup()
+	}
+	async function checkErrorInRow() {
+		try {
+			const element = await monitorElements('tr td:nth-child(8) .___unit_k72io_1 div');
+			console.log('error found', element)
+			checkErrors()
+		} catch (error) {
+			console.error(error);
+		}
+	}
+	async function monitorElements(selector) {
+		return new Promise((resolve, reject) => {
+			errorObserver = new MutationObserver((mutationsList) => {
+				for (let mutation of mutationsList) {
+					for (let addedNode of mutation.addedNodes) {
+						if (addedNode.nodeType === Node.ELEMENT_NODE && addedNode.matches(selector)) {
+							resolve(addedNode);
+							return;
+						}
+					}
+				}
+			});
+	
+			errorObserver.observe(document.documentElement, { childList: true, subtree: true });
+	
+			const existingElement = document.querySelector(selector);
+			if (existingElement) {
+				resolve(existingElement);
+				return;
+			}
+	
+			errorTimeout = setTimeout(() => {
+				errorObserver.disconnect();
+				reject(new Error(`Timed out waiting for element matching selector '${selector}'`));
+			}, 10000);
+	
+			const cleanup = () => {
+				clearTimeout(errorTimeout);
+				errorObserver.disconnect();
+			};
+			
+			return cleanup;
+		});
+	}
+
+
+	
+	
+	
+
 	checkAll.addEventListener('change', function() {
 		promo();
 	})
@@ -54,6 +307,9 @@ function promoCalc() {
 	const promo = async (tableRs) => {
 		checkAll.click()
 		await delay(100);
+
+		await checkErrorInRow();
+
 		let btn = document.querySelector('.__use--size___TJHkL.__use--size_s___vC9Zt .___Button___Ltx4B.__use--type___HP3kV.__use--type_page___a18Cq.__disabled___IQ_Hz');
 		let nextPage = btn.nextElementSibling;
 		let pageCon = nextPage.querySelector('span span')?.textContent
@@ -89,7 +345,7 @@ function promoCalc() {
 			auto()
 		}
 	}
-
+	
 	
 	function auto() {
 		checkAll.click()
@@ -184,10 +440,13 @@ function saleCalc() {
 
 			rowOne.style.backgroundColor = '#d4e3fa';
 
+			/////////////////////////////////////////////////////////////////////
 			let checkbox = rowOne.querySelector('[type="checkbox"]'),
 			inputFirst = rowOne.querySelectorAll('td')[6].querySelector('input'),
 			price = rowOne.querySelectorAll('td')[5].querySelector('span.___Tag___xFCxD.__use--kind___TqC3g.__use--kind_tableBody____vp1n'),
 			sale = rowOne.querySelectorAll('td')[8].querySelector('span.___Tag___xFCxD.__use--kind___TqC3g.__use--kind_tableBody____vp1n');
+			/////////////////////////////////////////////////////////////////////
+
 
 			let priceTxt = price.textContent;
 			priceTxt = priceTxt.replace(/\D/g,'');
@@ -199,6 +458,8 @@ function saleCalc() {
 			if (checkboxStatus === false && saleTxt != 0) {
 				checkboxSetter(checkbox, true)
 			}
+
+
 
 			function inputter() {
 				firstInputChange(inputFirst, priceTxt)
@@ -214,6 +475,7 @@ function saleCalc() {
 
 			rowTwo.style.backgroundColor = '#dff4d9';
 
+			/////////////////////////////////////////////////////////////////////
 			let inputSecond = rowTwo.querySelectorAll('td')[7].querySelector('input');
 
 			zeroSetter(inputSecond)
@@ -221,6 +483,9 @@ function saleCalc() {
 			await delay(100)
 			
 		}
+
+		
+
 
 	}
 
